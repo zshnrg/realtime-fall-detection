@@ -1,50 +1,44 @@
 import cv2
+import base64
+import numpy as np
 import requests
-import time
+import json
 
-# URL dari server Flask
-server_url = 'http://127.0.0.1:5000/detect_fall'
-bot_token = '9rqKxPXzYNCEsrFrwRhDzIL7UgM3ld45dEF7W7KmmLe'
+# Server URL
+SERVER_URL = 'http://127.0.0.1:5000/detect_fall'
+API_KEY = '9rqKxPXzYNCEsrFrwRhDzIL7UgM3ld45dEF7W7KmmLe'
 
-# Membuka koneksi ke webcam
+# Capture video from webcam
 cap = cv2.VideoCapture(0)
 
-try:
-    while True:
-        # Mengambil gambar dari webcam
-        ret, frame = cap.read()
-        
-        if ret:
-            # Menampilkan gambar di jendela
-            cv2.imshow('Webcam', frame)
+while True:
+    # Capture frame-by-frame
+    ret, frame = cap.read()
 
-            # Menyimpan gambar sementara
-            _, buffer = cv2.imencode('.jpg', frame)
-            image_bytes = buffer.tobytes()
-            
-            # Mengirim permintaan POST ke server Flask
-            response = requests.post(
-                server_url,
-                files={'image': image_bytes},
-                params={'bot_token': bot_token}
-            )
+    # Convert frame to base64 string
+    _, buffer = cv2.imencode('.jpg', frame)
+    base64_encoded_frame = base64.b64encode(buffer).decode('utf-8')
 
-            # Memeriksa respon dari server
-            if response.status_code == 200:
-                print(response.json())
-            else:
-                print(f"Failed to send image. Status code: {response.status_code}")
+    # Display the resulting frame
+    cv2.imshow('frame', frame)
 
-            # Tunda sebelum mengambil gambar berikutnya (misalnya, 1 detik)
-            time.sleep(1)
+    # Prepare data to send to the server
+    data = {'frame': base64_encoded_frame, 'api_key': API_KEY}
+    headers = {'Content-Type': 'application/json'}
 
-            # Jika tombol 'q' ditekan, keluar dari loop
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-        else:
-            print("Failed to capture image")
-            break
-finally:
-    # Menutup koneksi ke webcam
-    cap.release()
-    cv2.destroyAllWindows()
+    # Send frame to server
+    response = requests.post(SERVER_URL, data=json.dumps(data), headers=headers)
+
+    if response.status_code == 200:
+        response_data = response.json()
+        print(response_data)
+    else:
+        print('Error:', response.status_code)
+
+    # Check for 'q' key press to exit
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+# Release capture
+cap.release()
+cv2.destroyAllWindows()

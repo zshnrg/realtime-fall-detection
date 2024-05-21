@@ -64,28 +64,18 @@ def send_line_notify(message, img, line_notify_token):
 @app.route('/detect_fall', methods=['POST'])
 def detect_fall():
     
-    if 'image' not in request.files:
-        return jsonify({'error': 'No image part'}), 400
+    data = request.json
+
+    if 'api_key' not in data:
+        return jsonify({'error': 'API key is missing'}), 401
     
-    file = request.files['image']
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
-    
-    # Check if bot token is provided
-    bot_token = request.args.get('bot_token')
-    if not bot_token:
-        return jsonify({"error": "No bot token provided"}), 400
-    
-    print(f"Received image and LINE Notify with bot token: {bot_token}")
-    
-    image_data = file.read()
+    bot_token = data['api_key']
+
+    base64_image = data.get('frame')
+    image_data = base64.b64decode(base64_image)
+
     np_arr = np.frombuffer(image_data, np.uint8)
     img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-
-    # Get the user's chat ID
-    chat_id = request.json.get('message', {}).get('chat', {}).get('id')
-    if not chat_id:
-        return jsonify({"error": "Chat ID not found in request"}), 400
 
     detector = poseDetector()
     img = detector.findPose(img)
