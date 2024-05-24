@@ -108,7 +108,7 @@ def main():
                 message = "Alert: Someone has fallen!"
                 send_line_notify(message, image_path)
         
-        cv2.imshow("Image", img)
+        # cv2.imshow("Image", img)s
         
         # Exit loop if 'q' is pressed
         if cv2.waitKey(1) & 0xFF == ord('q'):

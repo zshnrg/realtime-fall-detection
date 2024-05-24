@@ -19,9 +19,6 @@ while True:
     _, buffer = cv2.imencode('.jpg', frame)
     base64_encoded_frame = base64.b64encode(buffer).decode('utf-8')
 
-    # Display the resulting frame
-    cv2.imshow('frame', frame)
-
     # Prepare data to send to the server
     data = {'frame': base64_encoded_frame, 'api_key': API_KEY}
     headers = {'Content-Type': 'application/json'}
@@ -38,6 +35,8 @@ while True:
     # Check for 'q' key press to exit
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
+
+
 
 # Release capture
 cap.release()
