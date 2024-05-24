@@ -1,1 +1,5 @@
 *.jpg
+
+
+# IDE
+.vscode/

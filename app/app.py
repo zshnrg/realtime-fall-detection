@@ -12,6 +12,7 @@ import requests
 
 app = Flask(__name__)
 
+
 class poseDetector:
     def __init__(self, mode=False, smooth=True, detectionCon=0.5, trackCon=0.5):
         self.mode = mode
@@ -22,9 +23,9 @@ class poseDetector:
         self.mpDraw = mp.solutions.drawing_utils
         self.mpPose = mp.solutions.pose
         self.pose = self.mpPose.Pose(static_image_mode=self.mode,
-                                      smooth_landmarks=self.smooth,
-                                      min_detection_confidence=self.detectionCon,
-                                      min_tracking_confidence=self.trackCon)
+                                     smooth_landmarks=self.smooth,
+                                     min_detection_confidence=self.detectionCon,
+                                     min_tracking_confidence=self.trackCon)
 
     def findPose(self, img, draw=True):
         imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -32,7 +33,8 @@ class poseDetector:
 
         if self.results.pose_landmarks:
             if draw:
-                self.mpDraw.draw_landmarks(img, self.results.pose_landmarks, self.mpPose.POSE_CONNECTIONS)
+                self.mpDraw.draw_landmarks(
+                    img, self.results.pose_landmarks, self.mpPose.POSE_CONNECTIONS)
         return img
 
     def getPosition(self, img):
@@ -44,6 +46,7 @@ class poseDetector:
                 lmList.append([id, cx, cy])
         return lmList
 
+
 def send_line_notify(message, img_path):
     url = "https://notify-api.line.me/api/notify"
     token = '9rqKxPXzYNCEsrFrwRhDzIL7UgM3ld45dEF7W7KmmLe'
@@ -53,19 +56,23 @@ def send_line_notify(message, img_path):
     payload = {
         'message': message
     }
-    
+
     try:
         with open(img_path, 'rb') as file:
             files = {'imageFile': file}
-            response = requests.post(url, headers=headers, params=payload, files=files)
+            response = requests.post(
+                url, headers=headers, params=payload, files=files)
     except Exception as e:
         print(f"An error occurred while sending the image: {e}")
     return response.status_code
 
+
 # Load the model and pose detector once when the app starts
-model_path = os.path.join(os.path.dirname(__file__), 'fall_detection_model.pkl')
+model_path = os.path.join(os.path.dirname(
+    __file__), 'fall_detection_model.pkl')
 model = joblib.load(model_path)
 detector = poseDetector()
+
 
 @app.route('/detect_fall', methods=['POST'])
 def detect_fall():
@@ -73,30 +80,32 @@ def detect_fall():
 
     if 'api_key' not in data:
         return jsonify({'error': 'API key is missing'}), 401
-    
+
     bot_token = data['api_key']
     base64_image = data.get('frame')
     image_data = base64.b64decode(base64_image)
-    
+
     np_arr = np.frombuffer(image_data, np.uint8)
     img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-    
+
     img = detector.findPose(img)
     lmList = detector.getPosition(img)
-    
+
     response = {
         "prediction": "No fall detected",
         "angles": []
     }
-    
+
     if len(lmList) >= 15:
         head = lmList[0]
         shoulder = lmList[11]
         hip = lmList[23]
         knee = lmList[25]
 
-        angle_1 = math.degrees(math.atan2(shoulder[2] - head[2], shoulder[1] - head[1]))
-        angle_2 = math.degrees(math.atan2(hip[2] - shoulder[2], hip[1] - shoulder[1]))
+        angle_1 = math.degrees(math.atan2(
+            shoulder[2] - head[2], shoulder[1] - head[1]))
+        angle_2 = math.degrees(math.atan2(
+            hip[2] - shoulder[2], hip[1] - shoulder[1]))
         angle_3 = math.degrees(math.atan2(knee[2] - hip[2], knee[1] - hip[1]))
 
         input_data = [[angle_1, angle_2, angle_3]]
@@ -105,7 +114,7 @@ def detect_fall():
         response["prediction"] = prediction[0]
         response["angles"] = [angle_1, angle_2, angle_3]
 
-        if prediction[0] == 'fall':
+        if prediction[0] == 'Fall':
             print("Fall Detected")
             _, img_path = tempfile.mkstemp(suffix='.jpg')
             cv2.imwrite(img_path, img)
@@ -113,6 +122,7 @@ def detect_fall():
             send_line_notify(message, img_path)
 
     return jsonify(response)
+
 
 if __name__ == '__main__':
     app.run(threaded=True)

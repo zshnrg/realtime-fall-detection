@@ -41,7 +41,7 @@ while True:
     cv2.imshow('Frame', frame)
 
     # Wait for 5 seconds before sending the next frame
-    time.sleep(1)
+    time.sleep(0.5)
 
     # Check for 'q' key press to exit
     if cv2.waitKey(1) & 0xFF == ord('q'):
