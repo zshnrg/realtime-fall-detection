@@ -8,6 +8,7 @@ import time
 # Server URL
 SERVER_URL = 'http://127.0.0.1:5000/detect_fall'
 API_KEY = '9rqKxPXzYNCEsrFrwRhDzIL7UgM3ld45dEF7W7KmmLe'
+LOCATION = 'Jl. Tengku Angkasa No.5'
 
 # Capture video from webcam
 cap = cv2.VideoCapture(0)
@@ -25,7 +26,7 @@ while True:
     base64_encoded_frame = base64.b64encode(buffer).decode('utf-8')
 
     # Prepare data to send to the server
-    data = {'frame': base64_encoded_frame, 'api_key': API_KEY}
+    data = {'frame': base64_encoded_frame, 'api_key': API_KEY, 'location': LOCATION}
     headers = {'Content-Type': 'application/json'}
 
     # Send frame to server

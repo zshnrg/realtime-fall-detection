@@ -47,9 +47,8 @@ class poseDetector:
         return lmList
 
 
-def send_line_notify(message, img_path):
+def send_line_notify(message, img_path, token):
     url = "https://notify-api.line.me/api/notify"
-    token = '9rqKxPXzYNCEsrFrwRhDzIL7UgM3ld45dEF7W7KmmLe'
     headers = {
         "Authorization": f"Bearer {token}"
     }
@@ -79,9 +78,14 @@ def detect_fall():
     data = request.json
 
     if 'api_key' not in data:
-        return jsonify({'error': 'API key is missing'}), 401
+        return jsonify({'error': 'LINE API token is missing'}), 401
+    
+    if 'location' not in data:
+        return ({'error': 'Camera location is missing'}), 401
 
     bot_token = data['api_key']
+    location = data['location']
+
     base64_image = data.get('frame')
     image_data = base64.b64decode(base64_image)
 
@@ -118,8 +122,8 @@ def detect_fall():
             print("Fall Detected")
             _, img_path = tempfile.mkstemp(suffix='.jpg')
             cv2.imwrite(img_path, img)
-            message = "Alert: Someone has fallen!"
-            send_line_notify(message, img_path)
+            message = "Alert: Someone has fallen!" + f'\nLocation: {location}' + '\nEmergency Number: *119*\nAmbulan/Kemenkes: 119'
+            send_line_notify(message, img_path, bot_token)
 
     return jsonify(response)
 
