@@ -3,6 +3,7 @@ import base64
 import numpy as np
 import requests
 import json
+import time
 
 # Server URL
 SERVER_URL = 'http://127.0.0.1:5000/detect_fall'
@@ -14,6 +15,10 @@ cap = cv2.VideoCapture(0)
 while True:
     # Capture frame-by-frame
     ret, frame = cap.read()
+
+    if not ret:
+        print("Failed to capture image")
+        break
 
     # Convert frame to base64 string
     _, buffer = cv2.imencode('.jpg', frame)
@@ -32,11 +37,15 @@ while True:
     else:
         print('Error:', response.status_code)
 
+    # Display the frame
+    cv2.imshow('Frame', frame)
+
+    # Wait for 5 seconds before sending the next frame
+    time.sleep(1)
+
     # Check for 'q' key press to exit
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
-
-
 
 # Release capture
 cap.release()

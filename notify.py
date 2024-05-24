@@ -1,12 +1,13 @@
+import os
 import cv2
-import mediapipe as mp
+import base64
+import requests
 import time
 import math
 import joblib
-import requests
-import datetime
-import os
-from sklearn.ensemble import RandomForestClassifier  # Ensure this matches the model used
+import tempfile
+
+import mediapipe as mp
 
 class poseDetector():
     def __init__(self, mode=False, smooth=True, detectionCon=0.5, trackCon=0.5):
@@ -48,7 +49,7 @@ class poseDetector():
         cv2.putText(img, "FPS: " + str(int(fbs)), (50, 50), cv2.FONT_HERSHEY_PLAIN, 1,
                     (255, 0, 0), 2)
 
-def send_line_notify(message, image_path):
+def send_line_notify(message, img_path):
     url = "https://notify-api.line.me/api/notify"
     token = '9rqKxPXzYNCEsrFrwRhDzIL7UgM3ld45dEF7W7KmmLe'
     headers = {
@@ -57,17 +58,14 @@ def send_line_notify(message, image_path):
     payload = {
         'message': message
     }
-    files = {
-        'imageFile': open(image_path, 'rb')
-    }
-    response = requests.post(url, headers=headers, params=payload, files=files)
+    
+    try:
+        with open(img_path, 'rb') as file:
+            files = {'imageFile': file}
+            response = requests.post(url, headers=headers, params=payload, files=files)
+    except Exception as e:
+        print(f"An error occurred while sending the image: {e}")
     return response.status_code
-
-def capture_snapshot(frame):
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    image_path = f"snapshot_{timestamp}.jpg"
-    cv2.imwrite(image_path, frame)
-    return image_path
 
 def main():
     detector = poseDetector()
@@ -104,11 +102,13 @@ def main():
             cv2.putText(img, prediction[0], (50, 100), cv2.FONT_HERSHEY_PLAIN, 2, (0, 255, 0), 1)
             
             if prediction[0] == 'Fall':
-                image_path = capture_snapshot(img)
+                # Save the image as a temporary file
+                _, img_path = tempfile.mkstemp(suffix='.jpg')
+                cv2.imwrite(img_path, img)
                 message = "Alert: Someone has fallen!"
-                send_line_notify(message, image_path)
+                send_line_notify(message, img_path)
         
-        # cv2.imshow("Image", img)s
+        cv2.imshow("Image", img)
         
         # Exit loop if 'q' is pressed
         if cv2.waitKey(1) & 0xFF == ord('q'):
